@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image/src/image/image_data.dart';
 import 'package:image_picker/image_picker.dart';
 import 'grafik.dart';
-
+import 'image_processor.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -10,7 +12,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  File? _image;
+  List<File> _images = [];
 
   Future _getImageFromCamera() async {
     final imagePicker = ImagePicker();
@@ -18,7 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     setState(() {
       if (pickedImage != null) {
-        _image = File(pickedImage.path);
+        _images.add(File(pickedImage.path)); // Seçilen fotoğrafı listeye ekle
       } else {
         print('No image selected.');
       }
@@ -31,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     setState(() {
       if (pickedImage != null) {
-        _image = File(pickedImage.path);
+        _images.add(File(pickedImage.path)); // Seçilen fotoğrafı listeye ekle
       } else {
         print('No image selected.');
       }
@@ -42,49 +44,64 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Fotoğraf Seçme ve Gösterme'),
+        title: Text('Pİxel Calculate'),
       ),
       body: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            Wrap(
-              alignment: WrapAlignment.center,
-              children: <Widget>[
-                ElevatedButton(
-                  onPressed: _getImageFromCamera,
-                  child: Text('Kameradan Fotoğraf Çek'),
-                ),
-                SizedBox(width: 20),
-                ElevatedButton(
-                  onPressed: _getImageFromGallery,
-                  child: Text('Galeriden Fotoğraf Seç'),
-                ),
-              ],
-            ),
-            SizedBox(height: 20),
-            Container(
-              width: MediaQuery.of(context).size.width,
-              height: 300,
-              child: _image != null
-                  ? Image.file(
-                _image!,
-                fit: BoxFit.cover,
-              )
-                  : Text('Fotoğraf Henüz Seçilmedi'),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => SecondScreen()), // İkinci ekranı aç
-                );
-              },
-              child: Text('Hesapla'),
-            ),
-          ],
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              Wrap(
+                alignment: WrapAlignment.center,
+                children: <Widget>[
+                  ElevatedButton(
+                    onPressed: _getImageFromCamera,
+                    child: Text('Take Photo'),
+                  ),
+                  SizedBox(width: 20),
+                  ElevatedButton(
+                    onPressed: _getImageFromGallery,
+                    child: Text('Select Photo'),
+                  ),
+                ],
+              ),
+              SizedBox(height: 20),
+              ListView.builder(
+                shrinkWrap: true,
+                itemCount: _images.length,
+                itemBuilder: (BuildContext context, int index) {
+                  return Padding(
+                    padding: EdgeInsets.symmetric(vertical: 2.0), // Dikeyde 2 birim boşluk
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9, // Oranı istediğiniz gibi ayarlayabilirsiniz
+                      child: Image.file(
+                        _images[index],
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  );
+                },
+              ),
+
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  // İkinci ekrana geçiş yapmadan önce pikselleri al
+                  ImageData? pixels = ImageProcessor.getPixelsFromFile(_images[0]);
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SecondScreen(pixels as Uint8List),
+                    ),
+                  );
+                },
+                child: Text('Calculate'),
+              ),
+
+            ],
+          ),
         ),
       ),
     );
