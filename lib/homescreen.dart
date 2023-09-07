@@ -1,107 +1,90 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:image/src/image/image_data.dart';
 import 'package:image_picker/image_picker.dart';
 import 'grafik.dart';
-import 'image_processor.dart';
+import 'package:gallery_saver/gallery_saver.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatefulWidget  {
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<File> _images = [];
-
-  Future _getImageFromCamera() async {
-    final imagePicker = ImagePicker();
-    final pickedImage = await imagePicker.pickImage(source: ImageSource.camera);
-
-    setState(() {
-      if (pickedImage != null) {
-        _images.add(File(pickedImage.path)); // Seçilen fotoğrafı listeye ekle
-      } else {
-        print('No image selected.');
-      }
-    });
-  }
-
-  Future _getImageFromGallery() async {
-    final imagePicker = ImagePicker();
-    final pickedImage = await imagePicker.pickImage(source: ImageSource.gallery);
-
-    setState(() {
-      if (pickedImage != null) {
-        _images.add(File(pickedImage.path)); // Seçilen fotoğrafı listeye ekle
-      } else {
-        print('No image selected.');
-      }
-    });
-  }
+  List<File> _images = [];// Seçilen veya çekilen fotoğrafları saklamak için bir liste
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Pİxel Calculate'),
+        title: Text('Photo Viewer'),
       ),
-      body: SingleChildScrollView(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              Wrap(
-                alignment: WrapAlignment.center,
-                children: <Widget>[
-                  ElevatedButton(
-                    onPressed: _getImageFromCamera,
-                    child: Text('Take Photo'),
-                  ),
-                  SizedBox(width: 20),
-                  ElevatedButton(
-                    onPressed: _getImageFromGallery,
-                    child: Text('Select Photo'),
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
-              ListView.builder(
-                shrinkWrap: true,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                // Fotoğraf çekme işlemi
+                ElevatedButton(
+                  onPressed: () async {
+                    final image = await ImagePicker().pickImage(source: ImageSource.camera);
+                    if (image != null) {
+                      File photo = File(image.path);
+                      // Fotoğrafı galeriye kaydetme işlemi
+                       GallerySaver.saveImage(photo.path);
+
+                      setState(() {
+                        _images.add(photo);
+                      });
+                    }
+                  },
+                  child: Text('Fotoğraf Çek'),
+                ),
+                SizedBox(width: 20.0),
+                ElevatedButton(
+                  onPressed: () async {
+                    final image = await ImagePicker().pickImage(source: ImageSource.gallery);
+                    if (image != null) {
+                      File photo = File(image.path);
+                      setState(() {
+                        _images.add(photo);
+                      });
+                    }
+                  },
+                  child: Text('Fotoğraf Seç'),
+                ),
+              ],
+            ),
+            SizedBox(height: 20.0),
+            Expanded(
+              child: ListView.builder(
                 itemCount: _images.length,
-                itemBuilder: (BuildContext context, int index) {
+                itemBuilder: (context, index) {
                   return Padding(
-                    padding: EdgeInsets.symmetric(vertical: 2.0), // Dikeyde 2 birim boşluk
-                    child: AspectRatio(
-                      aspectRatio: 16 / 9, // Oranı istediğiniz gibi ayarlayabilirsiniz
-                      child: Image.file(
-                        _images[index],
-                        fit: BoxFit.cover,
-                      ),
+                    padding: EdgeInsets.all(2.0), // 2 birim boşluk ekleyin
+                    child: Image.file(
+                      _images[index],
+                      fit: BoxFit.cover,
                     ),
                   );
                 },
               ),
-
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  // İkinci ekrana geçiş yapmadan önce pikselleri al
-                  ImageData? pixels = ImageProcessor.getPixelsFromFile(_images[0]);
-
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SecondScreen(pixels as Uint8List),
-                    ),
-                  );
-                },
-                child: Text('Calculate'),
-              ),
-
-            ],
-          ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                // Hesapla butonuna basıldığında SecondScreen'e geçiş yap
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SecondScreen(),
+                  ),
+                );
+              },
+              child: Text('Hesapla'),
+            ),
+          ],
         ),
       ),
     );
