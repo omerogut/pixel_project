@@ -1,8 +1,11 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'grafik.dart';
 import 'package:gallery_saver/gallery_saver.dart';
+import 'redfile.dart';
+
+
 
 class HomeScreen extends StatefulWidget  {
   @override
@@ -10,7 +13,25 @@ class HomeScreen extends StatefulWidget  {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<File> _images = [];// Seçilen veya çekilen fotoğrafları saklamak için bir liste
+  List<File> _images = [];
+
+  int? get redPixelCount => null;// Seçilen veya çekilen fotoğrafları saklamak için bir liste
+
+  int calculateRedPixelIntensity(Image image) {
+    int redPixelCount = 0;
+
+    for (int y = 0; y < image.height!.toInt(); y++) {
+      for (int x = 0; x < image.width!.toInt(); x++) {
+        Color pixel = image.getPixel(x, y);
+
+        if (pixel.red >= 200 && pixel.green <= 100 && pixel.blue <= 100) {
+          redPixelCount++;
+        }
+      }
+    }
+
+    return redPixelCount;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +59,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       setState(() {
                         _images.add(photo);
                       });
+
+                      // Sonuç sayfasına geçiş yap
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ResultScreen(redPixelCount!),
+                        ),
+                      );
+
                     }
                   },
                   child: Text('Fotoğraf Çek'),
@@ -51,6 +81,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       setState(() {
                         _images.add(photo);
                       });
+
+                      // Sonuç sayfasına geçiş yap
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ResultScreen(redPixelCount!),
+                        ),
+                      );
+
                     }
                   },
                   child: Text('Fotoğraf Seç'),
@@ -73,14 +112,20 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             ElevatedButton(
-              onPressed: () {
-                // Hesapla butonuna basıldığında SecondScreen'e geçiş yap
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SecondScreen(),
-                  ),
-                );
+              onPressed: () async {
+                // Hesapla butonuna basıldığında sonucu göstermek için yeni sayfaya geçiş yap
+                if (_images.isNotEmpty) {
+                  File lastImage = _images.last;
+                  Image img = decodeImage(Uint8List.fromList(lastImage.readAsBytesSync()));
+                  int redPixelCount = calculateRedPixelIntensity(img);
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ResultScreen(redPixelCount),
+                    ),
+                  );
+                }
               },
               child: Text('Hesapla'),
             ),
